@@ -1,3 +1,4 @@
+#!/home/bjordanov/scripts/desktop_gui/linux-autoscroll/.autoscroll/bin/python3
 from functools import partial
 from queue import Queue
 from pynput.mouse import Button, Controller, Listener
@@ -58,19 +59,19 @@ class AutoscrollIconRaster(QLabel):
 class Autoscroll:
     def __init__(self):
         # modify this to adjust the speed of scrolling
-        self.DELAY = 5
+        self.DELAY = 10
         # modify this to change the button used for entering the scroll mode
         self.BUTTON_START = Button.middle
         # modify this to change the button used for exiting the scroll mode
-        self.BUTTON_STOP = Button.middle
+        self.BUTTON_STOP = [Button.middle, Button.left]
         # modify this to change the size (in px) of the area below and above the starting point where scrolling is paused
-        self.DEAD_AREA = 30
+        self.DEAD_AREA = 35
         # modify this to change the time you have to hold BUTTON_START for in order to enter the scroll mode
         self.TRIGGER_DELAY = 0
         # set this to True if you want the clipboard to be cleared before entering the scroll mode
         # applicable only if you are using Button.middle for BUTTON_START or BUTTON_STOP
         # requires xsel
-        self.CLEAR_CLIPBOARD = False
+        self.CLEAR_CLIPBOARD = True
         # set this to True if you want to autoscroll only while BUTTON_START is held down
         self.HOLD_MODE = False
         # modify this to change the scroll mode icon
@@ -79,7 +80,7 @@ class Autoscroll:
         self.ICON_PATH = str(Path(__file__).parent.resolve()) + "/icon.svg"
         # modify this to change the size (in px) of the icon
         # note that only svg images can be resized without loss of quality
-        self.ICON_SIZE = 30
+        self.ICON_SIZE = 35
 
         if self.ICON_PATH[-4:] == ".svg":
             self.icon = AutoscrollIconSvg(self.ICON_PATH, self.ICON_SIZE)
@@ -112,13 +113,13 @@ class Autoscroll:
         if button == self.BUTTON_START and pressed and not self.scroll_mode.is_set():
             self.queue.put(partial(self.enter_scroll_mode, x, y))
             self.started = True
+        elif button in self.BUTTON_STOP and pressed and self.scroll_mode.is_set():
+            self.queue.put(partial(self.exit_scroll_mode))
         elif button == self.BUTTON_START and not pressed and self.started:
             self.cancelled.set()
             self.started = False
             if self.HOLD_MODE:
                 self.queue.put(partial(self.exit_scroll_mode))
-        elif button == self.BUTTON_STOP and not pressed and self.scroll_mode.is_set():
-            self.queue.put(partial(self.exit_scroll_mode))
 
     def enter_scroll_mode(self, x, y):
         if self.CLEAR_CLIPBOARD:
